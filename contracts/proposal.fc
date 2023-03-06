@@ -1,0 +1,108 @@
+#include "imports/stdlib.fc";
+
+;;Global variables
+global cell dao_address;
+global int proposal_id;
+global int proposal_type;
+global slice proposer_account;
+global cell proposal_description;
+global cell receiver_account;
+global int submission_time;
+global cell voters_list;
+global int votes_for;
+global int votes_against;
+
+;;===============================STORAGE===================================
+() load_data() impure {
+    var ds = get_data().begin_parse();
+    dao_address = ds~load_ref();
+    proposal_id = ds~load_uint(64);
+    proposal_type = ds~load_uint(64);
+    proposer_account = ds~load_msg_addr();
+    proposal_description = ds~load_ref();
+    receiver_account = ds~load_ref();
+    submission_time = ds~load_uint(64);
+    voters_list = ds~load_dict();
+    votes_for = ds~load_uint(32);
+    votes_against = ds~load_uint(32);
+    ds.end_parse();
+}
+
+() save_data(
+    cell dao_address,
+    int proposal_id, 
+    int proposal_type, 
+    slice proposer_account, 
+    cell proposal_description, 
+    cell receiver_account, 
+    int submission_time, 
+    cell voters_list, 
+    int votes_for, 
+    int votes_against
+    ) impure inline {
+        set_data(
+            begin_cell()
+            .store_ref(dao_address)
+            .store_uint(proposal_id, 64)
+            .store_uint(proposal_type, 64)
+            .store_slice(proposer_account)
+            .store_ref(proposal_description)
+            .store_ref(receiver_account)
+            .store_uint(submission_time, 64)
+            .store_dict(voters_list)
+            .store_uint(votes_for, 32)
+            .store_uint(votes_against, 32)
+            .end_cell()
+        );
+    }
+
+;;============================MESSAGES=============================
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    slice cs = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+
+    if (flags & 1) { ;; ignore all bounced messages 
+        return ();
+    }
+
+    if (in_msg_body.slice_empty?()) { 
+    return (); 
+    }
+
+    load_data();
+    int op = in_msg_body~load_uint(32);
+    voters_list = in_msg_body~load_ref();
+    if (op == 1) {;;add vote for
+        votes_for = votes_for + 1;
+    }
+    if (op == 0){;;add vote against 
+        votes_against = votes_against + 1;
+    }
+    if (op == 2){
+        
+    }
+    save_data(
+        dao_address,
+        proposal_id, 
+        proposal_type, 
+        proposer_account, 
+        proposal_description, 
+        receiver_account, 
+        submission_time, 
+        voters_list, 
+        votes_for, 
+        votes_against
+    );
+}
+
+;;===============================GETTERS==============================
+
+cell get_voters_list() method_id {
+    load_data();
+    return voters_list;
+}
+
+cell get_proposal_config() method_id {
+    return get_data();
+}

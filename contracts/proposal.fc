@@ -1,12 +1,12 @@
 #include "imports/stdlib.fc";
 
-;;Global variables
-global cell dao_address;
+;;storage variables
+global slice dao_address;
 global int proposal_id;
 global int proposal_type;
 global slice proposer_account;
 global cell proposal_description;
-global cell receiver_account;
+global slice receiver_account;
 global int submission_time;
 global cell voters_list;
 global int votes_for;
@@ -15,43 +15,43 @@ global int votes_against;
 ;;===============================STORAGE===================================
 () load_data() impure {
     var ds = get_data().begin_parse();
-    dao_address = ds~load_ref();
-    proposal_id = ds~load_uint(64);
-    proposal_type = ds~load_uint(64);
+    dao_address = ds~load_msg_addr();
+    proposal_id = ds~load_uint(16);
+    proposal_type = ds~load_uint(8);
     proposer_account = ds~load_msg_addr();
     proposal_description = ds~load_ref();
-    receiver_account = ds~load_ref();
+    receiver_account = ds~load_msg_addr();
     submission_time = ds~load_uint(64);
     voters_list = ds~load_dict();
-    votes_for = ds~load_uint(32);
-    votes_against = ds~load_uint(32);
+    votes_for = ds~load_uint(16);
+    votes_against = ds~load_uint(16);
     ds.end_parse();
 }
 
 () save_data(
-    cell dao_address,
+    slice dao_address,
     int proposal_id, 
     int proposal_type, 
     slice proposer_account, 
     cell proposal_description, 
-    cell receiver_account, 
+    slice receiver_account, 
     int submission_time, 
     cell voters_list, 
     int votes_for, 
     int votes_against
-    ) impure inline {
+    ) impure {
         set_data(
             begin_cell()
-            .store_ref(dao_address)
-            .store_uint(proposal_id, 64)
-            .store_uint(proposal_type, 64)
+            .store_slice(dao_address)
+            .store_uint(proposal_id, 16)
+            .store_uint(proposal_type, 8)
             .store_slice(proposer_account)
             .store_ref(proposal_description)
-            .store_ref(receiver_account)
+            .store_slice(receiver_account)
             .store_uint(submission_time, 64)
             .store_dict(voters_list)
-            .store_uint(votes_for, 32)
-            .store_uint(votes_against, 32)
+            .store_uint(votes_for, 16)
+            .store_uint(votes_against, 16)
             .end_cell()
         );
     }
@@ -59,29 +59,31 @@ global int votes_against;
 ;;============================MESSAGES=============================
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if (in_msg_body.slice_empty?()) { ;; ignore all empty messages
+        return ();
+    }
+    
     slice cs = in_msg_full.begin_parse();
     int flags = cs~load_uint(4);
-
     if (flags & 1) { ;; ignore all bounced messages 
         return ();
     }
 
-    if (in_msg_body.slice_empty?()) { 
-    return (); 
-    }
+    load_data(); ;; here we populate the storage variables
 
-    load_data();
-    int op = in_msg_body~load_uint(32);
+    int op = in_msg_body~load_uint(32); ;; by convention, the first 32 bits of incoming message is the op
+    int query_id = in_msg_body~load_uint(64); ;; also by convention, the next 64 bits contain the "query id", although this is not always the case
+
     voters_list = in_msg_body~load_ref();
-    if (op == 1) {;;add vote for
+    if (op == "op::add_vote_for"c) {;;add vote for
         votes_for = votes_for + 1;
     }
-    if (op == 0){;;add vote against 
+    if (op == "op::add_vote_against"c){;;add vote against 
         votes_against = votes_against + 1;
     }
-    if (op == 2){
-        
-    }
+
+    throw(0xffff); ;; if the message contains an op that is not known to this contract, we throw
+
     save_data(
         dao_address,
         proposal_id, 
@@ -98,11 +100,53 @@ global int votes_against;
 
 ;;===============================GETTERS==============================
 
-cell get_voters_list() method_id {
+slice get_dao_address() method_id {
     load_data();
-    return voters_list;
+    return dao_address;
 }
 
-cell get_proposal_config() method_id {
-    return get_data();
+int get_proposal_id() method_id {
+    load_data();
+    return proposal_id;
 }
+
+int get_proposal_type() method_id {
+    load_data();
+    return proposal_type;
+}
+
+slice get_proposer_account() method_id {
+    load_data();
+    return proposer_account;
+}
+
+cell get_proposal_description() method_id {
+    load_data();
+    return proposal_description;
+}
+
+slice get_receiver_account() method_id {
+    load_data();
+    return receiver_account;
+}
+
+int get_submission_time() method_id {
+    load_data();
+    return submission_time;
+}
+
+slice get_voters_list() method_id {
+    load_data();
+    return voters_list.begin_parse();
+}
+
+int get_votes_for() method_id {
+    load_data();
+    return votes_for;
+}
+
+int get_votes_against() method_id {
+    load_data();
+    return votes_against;
+}
+

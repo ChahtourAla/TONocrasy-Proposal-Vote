@@ -1,8 +1,9 @@
 import { Blockchain, SandboxContract } from '@ton-community/sandbox';
-import { Cell, toNano } from 'ton-core';
+import { Address, Cell, toNano, SendMode, beginCell } from 'ton-core';
 import { Proposal } from '../wrappers/Proposal';
 import '@ton-community/test-utils';
 import { compile } from '@ton-community/blueprint';
+import { randomAddress } from '@ton-community/test-utils';
 
 describe('Proposal', () => {
     let code: Cell;
@@ -17,7 +18,23 @@ describe('Proposal', () => {
     beforeEach(async () => {
         blockchain = await Blockchain.create();
 
-        proposal = blockchain.openContract(Proposal.createFromConfig({}, code));
+        proposal = blockchain.openContract(
+            Proposal.createFromConfig(
+                {
+                    dao_address: randomAddress(),
+                    proposal_id: 0,
+                    proposal_type: 0,
+                    proposer_account: randomAddress(),
+                    proposal_description: 'this is a test',
+                    receiver_account: randomAddress(),
+                    submission_time: Date.now(),
+                    voters_list: [],
+                    votes_for: 0,
+                    votes_against: 0,
+                },
+                code
+            )
+        );
 
         const deployer = await blockchain.treasury('deployer');
 
@@ -33,5 +50,20 @@ describe('Proposal', () => {
     it('should deploy', async () => {
         // the check is done inside beforeEach
         // blockchain and proposal are ready to use
+    });
+
+    it('should add vote for', async () => {
+        const voter = await blockchain.treasury('voter');
+        const votesForBefore = await proposal.getVotesFor();
+        console.log('votes for before: ', votesForBefore);
+        const addVote = await proposal.addVoteFor();
+        expect(addVote.transactions).toHaveTransaction({
+            from: voter.address,
+            to: proposal.address,
+            success: true,
+        });
+        const votesForAfter = await proposal.getVotesFor();
+        console.log('votes for after: ', votesForAfter);
+        expect(votesForAfter).toBe(votesForBefore + 1);
     });
 });

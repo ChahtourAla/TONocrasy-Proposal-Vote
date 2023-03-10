@@ -14,21 +14,21 @@ export async function run(provider: NetworkProvider, args: string[]) {
 
     const proposal = provider.open(Proposal.createFromAddress(address));
 
-    const voteForBefore = await proposal.getVotesFor();
+    const voteAgainstBefore = await proposal.getVotesAgainst();
 
-    await proposal.sendVoteFor(provider.sender());
+    await proposal.sendVoteAgainst(provider.sender());
 
     ui.write('Waiting for vote to be added...');
 
-    let voteForAfter = await proposal.getVotesFor();
+    let voteAgainstAfter = await proposal.getVotesAgainst();
     let attempt = 1;
-    while (voteForAfter === voteForBefore) {
+    while (voteAgainstAfter === voteAgainstBefore) {
         ui.setActionPrompt(`Attempt ${attempt}`);
         await sleep(2000);
-        voteForAfter = await proposal.getVotesFor();
+        voteAgainstAfter = await proposal.getVotesAgainst();
         attempt++;
     }
 
     ui.clearActionPrompt();
-    ui.write('vote for added successfully!');
+    ui.write('vote against added successfully!');
 }

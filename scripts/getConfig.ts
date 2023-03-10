@@ -2,13 +2,13 @@ import { getHttpEndpoint } from '@orbs-network/ton-access';
 import { TonClient, Address } from 'ton';
 import { Proposal } from '../wrappers/Proposal'; // this is the interface class we just implemented
 
-async function main() {
+export async function run() {
     // initialize ton rpc client on testnet
     const endpoint = await getHttpEndpoint({ network: 'testnet' });
     const client = new TonClient({ endpoint });
 
     // open Proposal instance by address
-    const proposalAddress = Address.parse('EQCVQwLCeDkCheg1i5NagFe2q7D4hVcFg3lYmUs2Vk2vLiJ4'); // replace with proposal address
+    const proposalAddress = Address.parse('EQAnDvMFcIqcI5E-awT6h5Xlh9Kn0x0-JbBlS_Fca0DV3-xv'); // replace with proposal address
     const proposal = new Proposal(proposalAddress);
     const proposalContract = client.open(proposal);
 
@@ -36,5 +36,3 @@ async function main() {
     };
     console.log('value:', config);
 }
-
-main();

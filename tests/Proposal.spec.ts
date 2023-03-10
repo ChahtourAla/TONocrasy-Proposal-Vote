@@ -56,7 +56,7 @@ describe('Proposal', () => {
         const voter = await blockchain.treasury('voter');
         const votesForBefore = await proposal.getVotesFor();
         console.log('votes for before: ', votesForBefore);
-        const addVote = await proposal.addVoteFor();
+        const addVote = await proposal.sendVoteFor(voter.getSender());
         expect(addVote.transactions).toHaveTransaction({
             from: voter.address,
             to: proposal.address,

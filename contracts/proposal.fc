@@ -28,20 +28,9 @@ global int votes_against;
     ds.end_parse();
 }
 
-() save_data(
-    slice dao_address,
-    int proposal_id, 
-    int proposal_type, 
-    slice proposer_account, 
-    cell proposal_description, 
-    slice receiver_account, 
-    int submission_time, 
-    cell voters_list, 
-    int votes_for, 
-    int votes_against
-    ) impure {
-        set_data(
-            begin_cell()
+() save_data() impure {
+    set_data(
+        begin_cell()
             .store_slice(dao_address)
             .store_uint(proposal_id, 16)
             .store_uint(proposal_type, 8)
@@ -53,8 +42,8 @@ global int votes_against;
             .store_uint(votes_for, 16)
             .store_uint(votes_against, 16)
             .end_cell()
-        );
-    }
+    );
+}
 
 ;;============================MESSAGES=============================
 
@@ -74,28 +63,23 @@ global int votes_against;
     int op = in_msg_body~load_uint(32); ;; by convention, the first 32 bits of incoming message is the op
     int query_id = in_msg_body~load_uint(64); ;; also by convention, the next 64 bits contain the "query id", although this is not always the case
 
-    voters_list = in_msg_body~load_ref();
+    ;;voters_list = in_msg_body~load_ref();
     if (op == "op::add_vote_for"c) {;;add vote for
         votes_for = votes_for + 1;
+        save_data();
+        return();
+
+
     }
     if (op == "op::add_vote_against"c){;;add vote against 
         votes_against = votes_against + 1;
+        save_data();
+        return();
     }
 
-    throw(0xffff); ;; if the message contains an op that is not known to this contract, we throw
-
-    save_data(
-        dao_address,
-        proposal_id, 
-        proposal_type, 
-        proposer_account, 
-        proposal_description, 
-        receiver_account, 
-        submission_time, 
-        voters_list, 
-        votes_for, 
-        votes_against
-    );
+    else {
+        throw(0xffff); ;; if the message contains an op that is not known to this contract, we throw
+    }
 }
 
 ;;===============================GETTERS==============================

@@ -2,13 +2,13 @@ import { Address, toNano } from 'ton-core';
 import { Proposal } from '../wrappers/Proposal';
 import { compile, NetworkProvider } from '@ton-community/blueprint';
 
-export async function deployProposal(provider: NetworkProvider) {
-    let myAddress = Address.parse('kQBr0J1v2e5-Wnv1Heerjsv4WlOccTpHBhjklHkNvF-F2sfL');
+export async function run(provider: NetworkProvider) {
+    let myAddress = Address.parse('kQCwlqJG250ThRWZSet1IWZoXTOA3kgBH9pSWhKp2OwXRfFZ');
 
     const myContract = Proposal.createFromConfig(
         {
             dao_address: myAddress,
-            proposal_id: 0,
+            proposal_id:Math.floor(Math.random() * 10000),
             proposal_type: 0,
             proposer_account: myAddress,
             proposal_description: 'this is a test',
@@ -20,6 +20,7 @@ export async function deployProposal(provider: NetworkProvider) {
         },
         await compile('Proposal')
     );
+
 
     await provider.deploy(myContract, toNano('0.05'));
 

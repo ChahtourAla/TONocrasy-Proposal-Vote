@@ -102,21 +102,32 @@ export class Proposal implements Contract {
         });
     }
 
-    async addVoteFor(via: Sender, provider?: ContractProvider) {
+    async addVoteFor( provider: ContractProvider,via: Sender) {
         const messageBody = beginCell()
             .storeUint(crc32str('op::add_vote_for'), 32)
             .storeUint(0, 64) // query id
             .endCell();
-        console.log('A');
-        if (provider) {
-            console.log('B');
+       
             await provider.internal(via, {
                 value: toNano('0.05'),
                 sendMode: SendMode.PAY_GAS_SEPARATELY,
                 body: messageBody,
             });
-        }
+        
     }
+    async sendIncrement(provider: ContractProvider, via: Sender) {
+        const messageBody = beginCell()
+        .storeUint(crc32str('op::add_vote_for'), 32)
+        .storeUint(0, 64) // query id
+        .endCell();
+   
+        await provider.internal(via, {
+            value: toNano('0.05'),
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: messageBody,
+        });
+    
+      }
 
     async addVoteAgainst(provider: ContractProvider, via: Sender) {
         await provider.internal(via, {

@@ -15,11 +15,6 @@ import {
 } from 'ton-core';
 import { crc32, crc32str } from '../utils/crc32';
 
-export type VotersList = {
-    address: Address;
-    vote: number;
-};
-
 export type ProposalConfig = {
     dao_address: Address;
     proposal_id: number;
@@ -28,29 +23,21 @@ export type ProposalConfig = {
     proposal_description: string;
     receiver_account: Address;
     submission_time: number;
-    voters_list: VotersList[];
+    voters_list: Dictionary<number, string>;
     votes_for: number;
     votes_against: number;
 };
 
-const VotersListValue: DictionaryValue<VotersList> = {
-    serialize(src: VotersList, builder) {
-        builder.storeAddress(src.address).storeUint(src.vote, 1);
+const ListValue: DictionaryValue<string> = {
+    serialize(src: string, builder) {
+        builder.storeStringRefTail(src);
     },
     parse(src) {
-        return {
-            address: src.loadAddress(),
-            vote: src.loadUint(1),
-        };
+        return src.loadStringRefTail();
     },
 };
 
 export function proposalConfigToCell(config: ProposalConfig): Cell {
-    const voters_list = Dictionary.empty(Dictionary.Keys.Uint(32), VotersListValue);
-    for (let i = 0; i < config.voters_list.length; i++) {
-        voters_list.set(i, config.voters_list[i]);
-    }
-
     return beginCell()
         .storeAddress(config.dao_address)
         .storeUint(config.proposal_id, 16)
@@ -59,7 +46,7 @@ export function proposalConfigToCell(config: ProposalConfig): Cell {
         .storeStringRefTail(config.proposal_description)
         .storeAddress(config.receiver_account)
         .storeUint(config.submission_time, 64)
-        .storeDict(voters_list)
+        .storeDict(config.voters_list)
         .storeUint(config.votes_for, 16)
         .storeUint(config.votes_against, 16)
         .endCell();
@@ -75,7 +62,7 @@ export function decodeConfig(cell: Cell): ProposalConfig {
         proposal_description: slice.loadStringTail(),
         receiver_account: slice.loadAddress(),
         submission_time: slice.loadUint(64),
-        voters_list: slice.loadDict(Dictionary.Keys.Uint(32), VotersListValue).values(),
+        voters_list: slice.loadDict(Dictionary.Keys.Uint(256), ListValue),
         votes_for: slice.loadUint(16),
         votes_against: slice.loadUint(16),
     };
@@ -102,10 +89,19 @@ export class Proposal implements Contract {
         });
     }
 
-    async sendVoteFor(provider: ContractProvider, via: Sender) {
+    async sendVoteFor(
+        provider: ContractProvider,
+        via: Sender,
+        opts: {
+            position: number;
+            address: string;
+        }
+    ) {
         const messageBody = beginCell()
             .storeUint(crc32str('op::add_vote_for'), 32)
             .storeUint(0, 64) // query id
+            .storeUint(opts.position, 256)
+            .storeStringRefTail(opts.address)
             .endCell();
 
         await provider.internal(via, {
@@ -115,10 +111,19 @@ export class Proposal implements Contract {
         });
     }
 
-    async sendVoteAgainst(provider: ContractProvider, via: Sender) {
+    async sendVoteAgainst(
+        provider: ContractProvider,
+        via: Sender,
+        opts: {
+            position: number;
+            address: string;
+        }
+    ) {
         const messageBody = beginCell()
             .storeUint(crc32str('op::add_vote_against'), 32)
             .storeUint(0, 64) // query id
+            .storeUint(opts.position, 256)
+            .storeStringRefTail(opts.address)
             .endCell();
 
         await provider.internal(via, {
@@ -157,7 +162,7 @@ export class Proposal implements Contract {
     }
 
     async getVotersList(provider: ContractProvider) {
-        return (await provider.get('get_voters_list', [])).stack.readTuple();
+        return (await provider.get('get_voters_list', [])).stack.readCell();
     }
 
     async getVotesFor(provider: ContractProvider) {

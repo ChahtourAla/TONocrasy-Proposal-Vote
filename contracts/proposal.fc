@@ -63,15 +63,18 @@ global int votes_against;
     int op = in_msg_body~load_uint(32); ;; by convention, the first 32 bits of incoming message is the op
     int query_id = in_msg_body~load_uint(64); ;; also by convention, the next 64 bits contain the "query id", although this is not always the case
 
-    ;;voters_list = in_msg_body~load_ref();
     if (op == "op::add_vote_for"c) {;;add vote for
+        int position = in_msg_body~load_uint(256);
+        cell address = in_msg_body~load_ref();
+        voters_list~udict_set_ref(256,position,address);
         votes_for = votes_for + 1;
         save_data();
         return();
-
-
     }
     if (op == "op::add_vote_against"c){;;add vote against 
+        int position = in_msg_body~load_uint(256);
+        cell address = in_msg_body~load_ref();
+        voters_list~udict_set_ref(256,position,address);
         votes_against = votes_against + 1;
         save_data();
         return();

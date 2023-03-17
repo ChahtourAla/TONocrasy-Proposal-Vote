@@ -20,6 +20,7 @@ export type ProposalConfig = {
     proposal_id: number;
     proposal_type: number;
     proposer_account: Address;
+    proposal_status: string;
     proposal_description: string;
     receiver_account: Address;
     submission_time: number;
@@ -43,6 +44,7 @@ export function proposalConfigToCell(config: ProposalConfig): Cell {
         .storeUint(config.proposal_id, 16)
         .storeUint(config.proposal_type, 8)
         .storeAddress(config.proposer_account)
+        .storeStringRefTail(config.proposal_status)
         .storeStringRefTail(config.proposal_description)
         .storeAddress(config.receiver_account)
         .storeUint(config.submission_time, 64)
@@ -59,6 +61,7 @@ export function decodeConfig(cell: Cell): ProposalConfig {
         proposal_id: slice.loadUint(16),
         proposal_type: slice.loadUint(8),
         proposer_account: slice.loadAddress(),
+        proposal_status: slice.loadStringTail(),
         proposal_description: slice.loadStringTail(),
         receiver_account: slice.loadAddress(),
         submission_time: slice.loadUint(64),
@@ -149,6 +152,10 @@ export class Proposal implements Contract {
         return (await provider.get('get_proposer_account', [])).stack.readAddress();
     }
 
+    async getProposalStatus(provider: ContractProvider) {
+        return (await provider.get('get_proposal_status', [])).stack.readString();
+    }
+
     async getProposalDescription(provider: ContractProvider) {
         return (await provider.get('get_proposal_description', [])).stack.readString();
     }
@@ -158,7 +165,7 @@ export class Proposal implements Contract {
     }
 
     async getSubmissionTime(provider: ContractProvider) {
-        return (await provider.get('get_submission_time', [])).stack.readBigNumber();
+        return (await provider.get('get_submission_time', [])).stack.readNumber();
     }
 
     async getVotersList(provider: ContractProvider) {

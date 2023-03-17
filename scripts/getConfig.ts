@@ -8,7 +8,7 @@ export async function run() {
     const client = new TonClient({ endpoint });
 
     // open Proposal instance by address
-    const proposalAddress = Address.parse('EQAnDvMFcIqcI5E-awT6h5Xlh9Kn0x0-JbBlS_Fca0DV3-xv'); // replace with proposal address
+    const proposalAddress = Address.parse('EQDJ7JK2VaRi1i7fxcuO0mQCMd2wXs7UqlrCAcqpXiqtDjay'); // replace with proposal address
     const proposal = new Proposal(proposalAddress);
     const proposalContract = client.open(proposal);
 
@@ -20,6 +20,7 @@ export async function run() {
     const proposalDescription = await proposalContract.getProposalDescription();
     const receiverAccount = await proposalContract.getReceiverAccount();
     const submissionTime = await proposalContract.getSubmissionTime();
+    const voters_list = await proposalContract.getVotersList();
     const votesFor = await proposalContract.getVotesFor();
     const votesAgainst = await proposalContract.getVotesAgainst();
 
@@ -31,6 +32,7 @@ export async function run() {
         proposalDescription: proposalDescription,
         receiverAccount: receiverAccount,
         submissionTime: submissionTime,
+        voters_list: voters_list,
         votesFor: votesFor,
         votesAgainst: votesAgainst,
     };

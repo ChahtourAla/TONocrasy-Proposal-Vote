@@ -5,6 +5,7 @@ global slice dao_address;
 global int proposal_id;
 global int proposal_type;
 global slice proposer_account;
+global cell proposal_status;
 global cell proposal_description;
 global slice receiver_account;
 global int submission_time;
@@ -19,6 +20,7 @@ global int votes_against;
     proposal_id = ds~load_uint(16);
     proposal_type = ds~load_uint(8);
     proposer_account = ds~load_msg_addr();
+    proposal_status = ds~load_ref();
     proposal_description = ds~load_ref();
     receiver_account = ds~load_msg_addr();
     submission_time = ds~load_uint(64);
@@ -35,6 +37,7 @@ global int votes_against;
             .store_uint(proposal_id, 16)
             .store_uint(proposal_type, 8)
             .store_slice(proposer_account)
+            .store_ref(proposal_status)
             .store_ref(proposal_description)
             .store_slice(receiver_account)
             .store_uint(submission_time, 64)
@@ -80,6 +83,27 @@ global int votes_against;
         return();
     }
 
+    if (op == "op::add_member_proposal_accepted"c){;;change the proposal status to accepted & execute add member
+        cell status = in_msg_body~load_ref();
+        proposal_status = status;
+        save_data();
+        return();
+    }
+
+    if (op == "op::transfer_ton_proposal_accepted"c){;;change the proposal status to accepted & execute transfer TON
+        cell status = in_msg_body~load_ref();
+        proposal_status = status;
+        save_data();
+        return();
+    }
+
+    if (op == "op::proposal_refused"c){;;change the proposal status to refused
+        cell status = in_msg_body~load_ref();
+        proposal_status = status;
+        save_data();
+        return();
+    }
+
     else {
         throw(0xffff); ;; if the message contains an op that is not known to this contract, we throw
     }
@@ -105,6 +129,11 @@ int get_proposal_type() method_id {
 slice get_proposer_account() method_id {
     load_data();
     return proposer_account;
+}
+
+cell get_proposal_status() method_id {
+    load_data();
+    return proposal_status;
 }
 
 cell get_proposal_description() method_id {
